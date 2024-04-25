@@ -1,0 +1,63 @@
+import time
+import board
+import busio
+import adafruit_bno055
+import adafruit_gps
+
+# Initialize I2C bus and sensors
+i2c = busio.I2C(scl=board.GP21, sda=board.GP20)
+i2c2 = busio.I2C(scl=board.GP3, sda=board.GP2)
+sensor = adafruit_bno055.BNO055_I2C(i2c2)
+gps = adafruit_gps.GPS_GtopI2C(i2c)
+
+# Configure GPS
+gps.send_command(b"PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0")
+gps.send_command(b"PMTK220,1000")
+
+# Initialize UART for HC-05 Bluetooth module
+bt_uart = busio.UART(board.GP8, board.GP9, baudrate=9600)
+usb_uart = busio.UART(board.GP0, board.GP1, baudrate=9600)
+
+def collect_data(sensor, gps, current_time):
+    temp = f"Temperature: {sensor.temperature} degrees C"
+    accel = f"Accelerometer (m/s^2): {sensor.acceleration}"
+    mag = f"Magnetometer (microteslas): {sensor.magnetic}"
+    gyro = f"Gyroscope (rad/sec): {sensor.gyro}"
+    euler = f"Euler Angle: {sensor.euler}"
+    quat = f"Quaternion: {sensor.quaternion}"
+    lin_accel = f"Linear Acceleration (m/s^2): {sensor.linear_acceleration}"
+    grav = f"Gravity (m/s^2): {sensor.gravity}"
+
+    # GPS Time or System Time
+    date_str = f"{current_time.tm_year}/{current_time.tm_mon}/{current_time.tm_mday}"
+    time_str = f"{current_time.tm_hour-5}:{current_time.tm_min+2}:{current_time.tm_sec}"
+
+    gps_data = f"Latitude: {gps.latitude}\nLongitude: {gps.longitude}\nAltitude: {gps.altitude_m}\nSatellites: {gps.satellites}"
+    imu_data = f"Temperature: {sensor.temperature} degrees C \nAccelerometer (m/s^2): {sensor.acceleration}\nMagnetometer (microteslas): {sensor.magnetic}\nGyroscope (rad/sec): {sensor.gyro}\nEuler Angle: {sensor.euler}\nQuaternion: {sensor.quaternion}\nLinear Acceleration (m/s^2): {sensor.linear_acceleration}\nGravity (m/s^2): {sensor.gravity}"
+    data_to_send = f"{date_str} {time_str}\nIMU Data:\n{imu_data}\nGPS Data:\n{gps_data}\n"
+
+    return data_to_send
+
+def collect_datausb(sensor, gps, current_time):
+
+    gps_datausb = f"Latitude: {gps.latitude}!Longitude: {gps.longitude}!Altitude: {gps.altitude_m}!Satellites: {gps.satellites}"
+    imu_datausb = f"Temperature (C): {sensor.temperature}!Accelerometer (m/s^2): {sensor.acceleration}!Magnetometer (microteslas): {sensor.magnetic}!Gyroscope (rad/sec): {sensor.gyro}!Euler Angle: {sensor.euler}!Quaternion: {sensor.quaternion}!Linear Acceleration (m/s^2): {sensor.linear_acceleration}!Gravity (m/s^2): {sensor.gravity}"
+    data_to_sendusb = f"IMU Data: {imu_datausb}\nGPS Data: {gps_datausb}\n"
+
+
+    return data_to_sendusb
+
+# Main loop for data collection and transmission
+while True:
+    gps.update()
+    current_time = gps.timestamp_utc if gps.timestamp_utc else time.localtime()
+    data_to_send = collect_data(sensor, gps, current_time)
+    data_to_sendusb = collect_datausb(sensor, gps, current_time)
+
+    # Send data over Bluetooth
+    usb_uart.write(data_to_sendusb.encode('utf-8'))
+    bt_uart.write(data_to_send.encode('utf-8'))
+    print(data_to_sendusb)
+
+    # Delay between readings
+    time.sleep(5)
