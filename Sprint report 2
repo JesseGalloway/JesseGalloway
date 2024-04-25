@@ -1,0 +1,28 @@
+Project 2 
+Sprint 2 Report
+
+Overall Design Concept: 
+Connections used from the controller to the devices:
+I2C: GPS, IMU
+UART: Bluetooth
+What we used for programming:
+Circuit Python: GPS, IMU
+MicroPython: Bluetooth 
+
+
+Parts List
+Controller: Raspberry Pi Pico
+GPS: Adafruit Mini GPS PA1010D 
+IMU: Adafruit BNO055 Absolute Orientation Sensor
+Bluetooth: DSD Tech HC-05 
+SD Card Adapter: Micro SD Card Adapter Module
+Android device 
+GeeekPi UPS Power Supply Uninterruptible UPS HAT for Raspberry Pi Pico
+18650 Rechargeable Battery 9900mAh 3.7Volt Large Capacity
+
+
+Plan Going Forward:
+integrating the codes from each component.
+developing the graphical user interface.
+Start a design for the PCB and the case
+Final testing 
