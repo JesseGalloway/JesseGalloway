@@ -1,0 +1,101 @@
+import serial
+import tkinter as tk
+import threading
+
+# Function to read data from serial and update GUI
+def read_serial():
+    while True:
+        data = ser.readline().decode().strip()
+        if data:
+            print("Received:", data)
+            if "IMU Data:" in data:
+                imu_data = data.split("IMU Data:")[1].strip()
+                update_imu(imu_data)
+            elif "GPS Data:" in data:
+                gps_data = data.split("GPS Data:")[1].strip()
+                update_gps(gps_data)
+
+# Function to update GPS fields
+def update_gps(data):
+    if data:
+        gps_values = data.split("!")
+        for value in gps_values:
+            label, value = value.split(": ")
+            if label in gps_widgets:
+                gps_widgets[label].config(text=value)
+
+# Function to update IMU fields
+def update_imu(data):
+    if data:
+        imu_values = data.split("!")
+        for value in imu_values:
+            label, value = value.split(": ")
+            if label in imu_widgets:
+                imu_widgets[label].config(text=value)
+
+# Function to start displaying data
+def start_display():
+    start_button.config(state=tk.DISABLED)
+    end_button.config(state=tk.NORMAL)
+    # Start reading serial data
+    threading.Thread(target=read_serial, daemon=True).start()
+
+# Function to end displaying data
+def end_display():
+    start_button.config(state=tk.NORMAL)
+    end_button.config(state=tk.DISABLED)
+
+# Function to gracefully close the application
+def close_app():
+    window.destroy()
+    ser.close()
+
+# Open serial port
+ser = serial.Serial('COM5', 9600)  # Replace 'COM5' with your serial port
+
+# Create Tkinter window
+window = tk.Tk()
+window.title("Data Display")
+
+# Create IMU section
+imu_frame = tk.Frame(window)
+imu_frame.pack(side=tk.LEFT, padx=10)
+
+imu_widgets = {}
+for label in ["Temperature (C)", "Accelerometer (m/s^2)", "Magnetometer (microteslas)",
+              "Gyroscope (rad/sec)", "Euler Angle", "Quaternion",
+              "Linear Acceleration (m/s^2)", "Gravity (m/s^2)"
+              ]:
+    lbl = tk.Label(imu_frame, text=label + ":")
+    lbl.pack(anchor='w')
+    value_lbl = tk.Label(imu_frame, text="")
+    value_lbl.pack(anchor='w')
+    imu_widgets[label] = value_lbl
+
+# Create GPS section
+gps_frame = tk.Frame(window)
+gps_frame.pack(side=tk.RIGHT, padx=10)
+
+gps_widgets = {}
+for label in ["Latitude", "Longitude", "Altitude", "Number of Satellites"]:
+    lbl = tk.Label(gps_frame, text=label + ":")
+    lbl.pack(anchor='w')
+    value_lbl = tk.Label(gps_frame, text="")
+    value_lbl.pack(anchor='w')
+    gps_widgets[label] = value_lbl
+
+# Create buttons
+button_frame = tk.Frame(window)
+button_frame.pack(pady=20)
+
+start_button = tk.Button(button_frame, text="Start Display", command=start_display)
+start_button.pack(side=tk.LEFT, padx=10)
+
+end_button = tk.Button(button_frame, text="End Display", command=end_display, state=tk.DISABLED)
+end_button.pack(side=tk.LEFT, padx=10)
+
+close_button = tk.Button(button_frame, text="Close Application", command=close_app)
+close_button.pack(side=tk.LEFT, padx=10)
+
+# Start Tkinter event loop
+window.mainloop()
